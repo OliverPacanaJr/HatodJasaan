@@ -1,0 +1,45 @@
+{
+  "name": "hatod-jasaan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HatodJasaan - Local food & goods delivery platform for Jasaan, Misamis Oriental",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "db:migrate": "supabase db push",
+    "db:reset": "supabase db reset",
+    "db:types": "supabase gen types typescript --local > src/lib/database.types.ts"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.1.5",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.47.10",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^11.15.0",
+    "next": "14.2.21",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.4.1",
+    "react-hook-form": "^7.54.2",
+    "sharp": "^0.33.5",
+    "tailwind-merge": "^2.6.0",
+    "zod": "^3.24.1",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.9",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.21",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2"
+  }
+}

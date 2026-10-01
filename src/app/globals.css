@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 255 255 255;
+    --foreground: 15 23 42;
+    --muted: 241 245 249;
+    --muted-foreground: 100 116 139;
+    --border: 226 232 240;
+    --ring: 249 115 22;
+  }
+
+  * {
+    @apply border-slate-200;
+  }
+
+  body {
+    @apply bg-white text-slate-900 antialiased;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .glass {
+    @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-lg;
+  }
+
+  .gradient-brand {
+    @apply bg-gradient-to-r from-brand-500 to-brand-600;
+  }
+
+  .gradient-hero {
+    @apply bg-gradient-to-br from-brand-500 via-brand-600 to-orange-700;
+  }
+
+  .gradient-dark {
+    @apply bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-6 py-3
+      text-sm font-semibold text-white shadow-sm transition-all duration-200
+      hover:bg-brand-600 hover:shadow-md active:scale-[0.98]
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-500;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3
+      text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300
+      transition-all duration-200 hover:bg-slate-50 active:scale-[0.98]
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-red-500 px-6 py-3
+      text-sm font-semibold text-white shadow-sm transition-all duration-200
+      hover:bg-red-600 active:scale-[0.98]
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .input-field {
+    @apply block w-full rounded-xl border border-slate-300 bg-white px-4 py-3
+      text-sm text-slate-900 placeholder:text-slate-400
+      transition-all duration-200
+      focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none
+      disabled:bg-slate-50 disabled:text-slate-500;
+  }
+
+  .label-field {
+    @apply block text-sm font-medium text-slate-700 mb-1.5;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Loading skeleton animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  @apply bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 bg-[length:200%_100%] rounded-lg;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
