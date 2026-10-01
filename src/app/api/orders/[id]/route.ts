@@ -137,7 +137,6 @@ export async function PATCH(
           body: `Your order ${order.order_number} has been delivered. Enjoy!`,
         });
         if (order.rider_id) {
-          await supabase.rpc('', {}).catch(() => {});
           await supabase
             .from('rider_profiles')
             .update({

@@ -2,20 +2,25 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TruckIcon, EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
+// Only allow same-site relative paths (blocks open redirects like ?redirect=https://evil.com)
+function safeRedirect(value: string | null) {
+  return value && value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\')
+    ? value
+    : '/dashboard';
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/dashboard';
   const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,6 +37,8 @@ export default function LoginPage() {
       return;
     }
     toast.success('Welcome back!');
+    // Read ?redirect= at submit time so the page doesn't need useSearchParams (which forces a Suspense boundary)
+    const redirect = safeRedirect(new URLSearchParams(window.location.search).get('redirect'));
     router.push(redirect);
     router.refresh();
   };
