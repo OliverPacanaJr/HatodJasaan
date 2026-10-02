@@ -20,12 +20,15 @@ import {
   CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { must, requireSignedIn, saveProfile, uploadDocument } from '@/lib/registration';
+import { SignupSetupWarning, SETUP_BLOCKED_MESSAGE, useEmailConfirmationOn } from '@/components/auth/signup-setup-warning';
 
 export default function CustomerRegisterPage() {
   const router = useRouter();
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const confirmationOn = useEmailConfirmationOn();
 
   const [form, setForm] = useState({
     fullName: '',
@@ -84,52 +87,49 @@ export default function CustomerRegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    if (confirmationOn) {
+      toast.error(SETUP_BLOCKED_MESSAGE);
+      return;
+    }
     setLoading(true);
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: {
-          data: { full_name: form.fullName, role: 'customer' },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+      const { data: authData } = await must(
+        'Creating account',
+        supabase.auth.signUp({
+          email: form.email,
+          password: form.password,
+          options: {
+            data: { full_name: form.fullName, role: 'customer' },
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        })
+      );
+      const userId = requireSignedIn(authData);
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Registration failed');
-
-      const userId = authData.user.id;
-
-      // Update profile
-      await supabase.from('profiles').update({
+      await saveProfile(supabase, userId, {
         phone: form.phone,
         barangay: form.barangay,
         address: form.address,
-      }).eq('id', userId);
+      });
 
-      // Upload documents
       for (const [type, file] of Object.entries(files)) {
         if (!file) continue;
-        const ext = file.name.split('.').pop();
-        const path = `${userId}/${type}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from('documents')
-          .upload(path, file, { upsert: true });
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path);
-
-        await supabase.from('user_documents').insert({
-          user_id: userId,
-          document_type: type,
-          file_url: urlData.publicUrl,
-          file_name: file.name,
-        });
+        const fileUrl = await uploadDocument(supabase, userId, type, file);
+        await must(
+          'Saving document record',
+          supabase.from('user_documents').insert({
+            user_id: userId,
+            document_type: type,
+            file_url: fileUrl,
+            file_name: file.name,
+          })
+        );
       }
 
       setSuccess(true);
     } catch (err: any) {
+      console.error('Registration failed:', err);
       toast.error(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
@@ -145,7 +145,7 @@ export default function CustomerRegisterPage() {
           </div>
           <h2 className="text-xl font-bold text-slate-900 mb-2">Registration Submitted!</h2>
           <p className="text-slate-500 text-sm mb-2">
-            Please check your email to verify your account.
+            Your account is ready. You can log in now.
           </p>
           <p className="text-slate-500 text-sm mb-6">
             An admin will review your documents and approve your account. You&rsquo;ll be notified once approved.
@@ -169,6 +169,7 @@ export default function CustomerRegisterPage() {
         </Link>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <SignupSetupWarning show={confirmationOn} />
           {/* Header */}
           <div className="bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-6 sm:px-8">
             <div className="flex items-center gap-3">

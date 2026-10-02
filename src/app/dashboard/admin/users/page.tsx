@@ -14,6 +14,7 @@ import { formatDate, getApprovalStatusColor } from '@/lib/utils';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import type { Profile, UserDocument } from '@/lib/types';
 import toast from 'react-hot-toast';
+import { SecureDocImage } from '@/components/ui/secure-doc-image';
 
 const roleOptions = [
   { value: '', label: 'All Roles' },
@@ -183,7 +184,7 @@ export default function AdminUsersPage() {
                   {userDocs.map((doc) => (
                     <div key={doc.id} className="border border-slate-200 rounded-xl overflow-hidden">
                       <div className="relative h-40 bg-slate-100">
-                        <img src={doc.file_url} alt={doc.document_type} className="w-full h-full object-cover" />
+                        <SecureDocImage url={doc.file_url} alt={doc.document_type} className="w-full h-full object-cover" />
                       </div>
                       <div className="p-2 text-center">
                         <p className="text-xs font-medium text-slate-600 capitalize">

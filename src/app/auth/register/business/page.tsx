@@ -23,6 +23,8 @@ import {
   ArrowRightIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { must, requireSignedIn, saveProfile, uploadDocument } from '@/lib/registration';
+import { SignupSetupWarning, SETUP_BLOCKED_MESSAGE, useEmailConfirmationOn } from '@/components/auth/signup-setup-warning';
 
 const STEPS = ['Personal Info', 'Business Details', 'Documents'];
 
@@ -32,6 +34,7 @@ export default function BusinessRegisterPage() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const confirmationOn = useEmailConfirmationOn();
 
   const [form, setForm] = useState({
     fullName: '',
@@ -102,58 +105,63 @@ export default function BusinessRegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep(2)) return;
+    if (confirmationOn) {
+      toast.error(SETUP_BLOCKED_MESSAGE);
+      return;
+    }
     setLoading(true);
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: {
-          data: { full_name: form.fullName, role: 'business' },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Registration failed');
+      const { data: authData } = await must(
+        'Creating account',
+        supabase.auth.signUp({
+          email: form.email,
+          password: form.password,
+          options: {
+            data: { full_name: form.fullName, role: 'business' },
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        })
+      );
+      const userId = requireSignedIn(authData);
 
-      const userId = authData.user.id;
-
-      await supabase.from('profiles').update({
+      await saveProfile(supabase, userId, {
         phone: form.phone,
         barangay: form.barangay,
         address: form.businessAddress,
-      }).eq('id', userId);
+      });
 
       const slug = slugify(form.businessName) + '-' + Date.now().toString(36);
-      const { data: bizData, error: bizError } = await supabase.from('businesses').insert({
-        owner_id: userId,
-        name: form.businessName,
-        slug,
-        description: form.description,
-        business_type: form.businessType,
-        phone: form.businessPhone || form.phone,
-        email: form.email,
-        address: form.businessAddress,
-        barangay: form.barangay,
-      }).select('id').single();
-      if (bizError) throw bizError;
+      const { data: bizData } = await must(
+        'Creating business',
+        supabase.from('businesses').insert({
+          owner_id: userId,
+          name: form.businessName,
+          slug,
+          description: form.description,
+          business_type: form.businessType,
+          phone: form.businessPhone || form.phone,
+          email: form.email,
+          address: form.businessAddress,
+          barangay: form.barangay,
+        }).select('id').single()
+      );
+      if (!bizData) throw new Error('Creating business: nothing was returned');
 
       for (const [type, file] of Object.entries(files)) {
         if (!file) continue;
-        const ext = file.name.split('.').pop();
-        const path = `${userId}/${type}.${ext}`;
-        await supabase.storage.from('documents').upload(path, file, { upsert: true });
-        const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path);
-
+        const fileUrl = await uploadDocument(supabase, userId, type, file);
+        const record = { document_type: type, file_url: fileUrl, file_name: file.name };
         if (type === 'government_id') {
-          await supabase.from('user_documents').insert({ user_id: userId, document_type: type, file_url: urlData.publicUrl, file_name: file.name });
+          await must('Saving document record', supabase.from('user_documents').insert({ user_id: userId, ...record }));
         } else {
-          await supabase.from('business_documents').insert({ business_id: bizData.id, document_type: type, file_url: urlData.publicUrl, file_name: file.name });
+          await must('Saving document record', supabase.from('business_documents').insert({ business_id: bizData.id, ...record }));
         }
       }
 
       setSuccess(true);
     } catch (err: any) {
+      console.error('Registration failed:', err);
       toast.error(err.message || 'Registration failed.');
     } finally {
       setLoading(false);
@@ -168,7 +176,7 @@ export default function BusinessRegisterPage() {
             <CheckCircleIcon className="h-8 w-8" />
           </div>
           <h2 className="text-xl font-bold text-slate-900 mb-2">Business Registration Submitted!</h2>
-          <p className="text-slate-500 text-sm mb-2">Check your email to verify your account.</p>
+          <p className="text-slate-500 text-sm mb-2">Your account is ready. You can log in now.</p>
           <p className="text-slate-500 text-sm mb-6">An admin will review your business documents. You&rsquo;ll be notified once approved.</p>
           <Link href="/auth/login"><Button variant="primary" className="w-full">Go to Login</Button></Link>
         </div>
@@ -187,6 +195,7 @@ export default function BusinessRegisterPage() {
         </Link>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <SignupSetupWarning show={confirmationOn} />
           <div className="bg-gradient-to-r from-accent-500 to-accent-600 px-6 py-6 sm:px-8">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
